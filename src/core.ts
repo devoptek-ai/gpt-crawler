@@ -1,5 +1,5 @@
 // For more information, see https://crawlee.dev/
-import { Configuration, PlaywrightCrawler, downloadListOfUrls } from "crawlee";
+import { Configuration, PlaywrightCrawler, downloadListOfUrls, sleep } from "crawlee";
 import { readFile, writeFile } from "fs/promises";
 import { glob } from "glob";
 import { Config, configSchema } from "./config.js";
@@ -10,25 +10,29 @@ import { PathLike } from "fs";
 let pageCounter = 0;
 let crawler: PlaywrightCrawler;
 
-export function getPageHtml(page: Page, selector = "body") {
-  return page.evaluate((selector) => {
-    // Check if the selector is an XPath
-    if (selector.startsWith("/")) {
-      const elements = document.evaluate(
-        selector,
-        document,
-        null,
-        XPathResult.ANY_TYPE,
-        null,
-      );
-      let result = elements.iterateNext();
-      return result ? result.textContent || "" : "";
-    } else {
-      // Handle as a CSS selector
-      const el = document.querySelector(selector) as HTMLElement | null;
-      return el?.innerText || "";
+export async function getPageText(page: Page) {
+
+  async function handleScrolling() {
+    for (let i = 0; i < 10; i++) { // Adjust number of scrolls as needed
+        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+        await sleep(1000); // Wait for lazy-loaded content to appear
     }
-  }, selector);
+  }
+  
+  await handleScrolling(); // Perform scrolling
+
+  const bodyText = await page.evaluate(() => {
+    // Remove unwanted elements from the DOM
+    const elementsToRemove = ['script', 'style', 'link', 'meta', 'noscript', 'header', 'footer', 'nav'];
+    elementsToRemove.forEach(selector => {
+        document.querySelectorAll(selector).forEach(el => el.remove());
+    });
+
+    // Extract clean text from the body, removing child nodes might be needed
+    return document.body.innerText.replace(/\s+/g, ' ').trim(); // Clean up whitespace and line breaks
+  });
+
+  return bodyText;
 }
 
 export async function waitForXPath(page: Page, xpath: string, timeout: number) {
@@ -79,10 +83,11 @@ export async function crawl(config: Config) {
             }
           }
 
-          const html = await getPageHtml(page, config.selector);
+          //  config.selector
+          const text = await getPageText(page);
 
           // Save results as JSON to ./storage/datasets/default
-          await pushData({ title, url: request.loadedUrl, html });
+          await pushData({ title, url: request.loadedUrl, text });
 
           if (config.onVisitPage) {
             await config.onVisitPage({ page, pushData });
