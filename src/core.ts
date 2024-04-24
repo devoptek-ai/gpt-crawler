@@ -16,11 +16,10 @@ let pageCounter = 0;
 let crawler: PlaywrightCrawler;
 
 export async function getPageText(page: Page) {
-
   // This lazy loads the page with 5 seconda interval.
-  await playwrightUtils.infiniteScroll(page,{
-    waitForSecs: 5
-  })
+  await playwrightUtils.infiniteScroll(page, {
+    waitForSecs: 5,
+  });
 
   const bodyText = await page.evaluate(() => {
     // Remove unwanted elements from the DOM

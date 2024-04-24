@@ -5,5 +5,5 @@ export const defaultConfig: Config = {
   match: "https://shop.cookdtv.com/**",
   maxPagesToCrawl: 5000,
   outputFileName: "output.json",
-  maxFileSize: 1
+  maxFileSize: 1,
 };
