@@ -1,5 +1,10 @@
 // For more information, see https://crawlee.dev/
-import { Configuration, PlaywrightCrawler, downloadListOfUrls, sleep } from "crawlee";
+import {
+  Configuration,
+  PlaywrightCrawler,
+  downloadListOfUrls,
+  sleep,
+} from "crawlee";
 import { readFile, writeFile } from "fs/promises";
 import { glob } from "glob";
 import { Config, configSchema } from "./config.js";
@@ -11,25 +16,34 @@ let pageCounter = 0;
 let crawler: PlaywrightCrawler;
 
 export async function getPageText(page: Page) {
-
   async function handleScrolling() {
-    for (let i = 0; i < 10; i++) { // Adjust number of scrolls as needed
-        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-        await sleep(1000); // Wait for lazy-loaded content to appear
+    for (let i = 0; i < 10; i++) {
+      // Adjust number of scrolls as needed
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+      await sleep(1000); // Wait for lazy-loaded content to appear
     }
   }
-  
+
   await handleScrolling(); // Perform scrolling
 
   const bodyText = await page.evaluate(() => {
     // Remove unwanted elements from the DOM
-    const elementsToRemove = ['script', 'style', 'link', 'meta', 'noscript', 'header', 'footer', 'nav'];
-    elementsToRemove.forEach(selector => {
-        document.querySelectorAll(selector).forEach(el => el.remove());
+    const elementsToRemove = [
+      "script",
+      "style",
+      "link",
+      "meta",
+      "noscript",
+      "header",
+      "footer",
+      "nav",
+    ];
+    elementsToRemove.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((el) => el.remove());
     });
 
     // Extract clean text from the body, removing child nodes might be needed
-    return document.body.innerText.replace(/\s+/g, ' ').trim(); // Clean up whitespace and line breaks
+    return document.body.innerText.replace(/\s+/g, " ").trim(); // Clean up whitespace and line breaks
   });
 
   return bodyText;
