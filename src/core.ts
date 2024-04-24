@@ -3,7 +3,7 @@ import {
   Configuration,
   PlaywrightCrawler,
   downloadListOfUrls,
-  sleep,
+  playwrightUtils,
 } from "crawlee";
 import { readFile, writeFile } from "fs/promises";
 import { glob } from "glob";
@@ -16,15 +16,11 @@ let pageCounter = 0;
 let crawler: PlaywrightCrawler;
 
 export async function getPageText(page: Page) {
-  async function handleScrolling() {
-    for (let i = 0; i < 10; i++) {
-      // Adjust number of scrolls as needed
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-      await sleep(1000); // Wait for lazy-loaded content to appear
-    }
-  }
 
-  await handleScrolling(); // Perform scrolling
+  // This lazy loads the page with 5 seconda interval.
+  await playwrightUtils.infiniteScroll(page,{
+    waitForSecs: 5
+  })
 
   const bodyText = await page.evaluate(() => {
     // Remove unwanted elements from the DOM
@@ -101,7 +97,7 @@ export async function crawl(config: Config) {
           const text = await getPageText(page);
 
           // Save results as JSON to ./storage/datasets/default
-          await pushData({ title, url: request.loadedUrl, text });
+          await pushData({ url: request.loadedUrl, text });
 
           if (config.onVisitPage) {
             await config.onVisitPage({ page, pushData });
